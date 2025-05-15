@@ -66,3 +66,12 @@ resource "aws_route_table_association" "route_table_association_1b" {
   route_table_id = aws_route_table.route-table-1b.id
 
 }
+
+# Insert Route into route table
+resource "aws_route" "internet_access_route" {
+    
+  route_table_id         = aws_route_table.route_table_for_subnets.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+
+}
