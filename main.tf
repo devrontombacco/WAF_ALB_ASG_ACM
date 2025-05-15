@@ -41,8 +41,8 @@ resource "aws_subnet" "public_subnet1b" {
   }
 }
 
-# Create Route Table for Public Subnet 1a
-resource "aws_route_table" "route-table-1a" {
+# Create 1 Route Table for both Public Subnets
+resource "aws_route_table" "route_table_for_subnets" {
   vpc_id = "${aws_vpc.main_vpc.id}"
 
   tags = {
@@ -51,17 +51,7 @@ resource "aws_route_table" "route-table-1a" {
 
 }
 
-# Create Route Table for Public Subnet 1b
-resource "aws_route_table" "route-table-1b" {
-  vpc_id = "${aws_vpc.main_vpc.id}"
-
-  tags = {
-    Name = "route-table-1b"
-  }
-
-}
-
-# Associate Route Table 1a with Public Subnet 1a
+# Associate Route Table with Public Subnet 1a
 resource "aws_route_table_association" "route_table_association_1a" {
 
   subnet_id      = aws_subnet.public_subnet1a.id
@@ -69,7 +59,7 @@ resource "aws_route_table_association" "route_table_association_1a" {
 
 }
 
-# Associate Route Table 1a with Public Subnet 1b
+# Associate Route Table with Public Subnet 1b
 resource "aws_route_table_association" "route_table_association_1b" {
 
   subnet_id      = aws_subnet.public_subnet1b.id
