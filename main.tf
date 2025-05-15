@@ -41,3 +41,22 @@ resource "aws_subnet" "public_subnet1b" {
   }
 }
 
+# Create Route Table for Public Subnet 1a
+resource "aws_route_table" "route-table-1a" {
+  vpc_id = "${aws_vpc.main_vpc.id}"
+
+  tags = {
+    Name = "route-table-1a"
+  }
+
+}
+
+# Create Route Table for Public Subnet 1b
+resource "aws_route_table" "route-table-1b" {
+  vpc_id = "${aws_vpc.main_vpc.id}"
+
+  tags = {
+    Name = "route-table-1b"
+  }
+
+}
