@@ -60,3 +60,19 @@ resource "aws_route_table" "route-table-1b" {
   }
 
 }
+
+# Associate Route Table 1a with Public Subnet 1a
+resource "aws_route_table_association" "route_table_association_1a" {
+
+  subnet_id      = aws_subnet.public_subnet1a.id
+  route_table_id = aws_route_table.route-table-1a.id
+
+}
+
+# Associate Route Table 1a with Public Subnet 1b
+resource "aws_route_table_association" "route_table_association_1b" {
+
+  subnet_id      = aws_subnet.public_subnet1b.id
+  route_table_id = aws_route_table.route-table-1b.id
+
+}
