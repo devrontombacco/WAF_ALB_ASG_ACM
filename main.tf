@@ -104,7 +104,7 @@ resource "aws_instance" "ec2_instance_1a" {
   tags = {
     Name = "ec2_instance_1a"
   }
-  #vpc_security_group_ids = [aws_security_group.public_ec2_sg.id]
+  vpc_security_group_ids = [aws_security_group.ec2-sg-ssh-http.id]
 
   user_data = <<-EOF
   #!/bin/bash
@@ -127,7 +127,7 @@ resource "aws_instance" "ec2_instance_1b" {
   tags = {
     Name = "ec2_instance_1b"
   }
-  #vpc_security_group_ids = [aws_security_group.public_ec2_sg.id]
+  vpc_security_group_ids = [aws_security_group.ec2-sg-ssh-http.id]
 
   user_data = <<-EOF
   #!/bin/bash
@@ -137,4 +137,42 @@ resource "aws_instance" "ec2_instance_1b" {
   sudo systemctl restart apache2
   EOF 
 
+}
+
+#Create env var for my ip address 
+
+variable "my_ip_address" {
+  type    = string
+  default = "0.0.0.0/0" # fallback IP
+}
+
+# Create security groups
+
+resource "aws_security_group" "ec2-sg-ssh-http" {
+  name        = "public_ec2_sg"
+  description = "Allow inbound traffic on ports 22 and 80"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    description = "allow SSH traffic"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.my_ip_address]
+  }
+
+  ingress {
+    description = "allow http traffic"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.my_ip_address]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
