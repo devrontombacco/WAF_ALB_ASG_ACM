@@ -2,7 +2,7 @@
 
 # Create a VPC
 resource "aws_vpc" "main_vpc" {
-  cidr_block = "12.0.0.0/16"
+  cidr_block = var.vpc_cidr
 
    tags = {
     Name = "main_vpc"
@@ -22,8 +22,8 @@ resource "aws_internet_gateway" "igw" {
 # Create 1st public subnet
 resource "aws_subnet" "public_subnet1a" {
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "12.0.1.0/24"
-  availability_zone       = "eu-west-1a"
+  cidr_block              = var.public_subnet1a_cidr
+  availability_zone       = var.availability_zone_1a
   map_public_ip_on_launch = true
   tags = {
     Name = "public_subnet1a"
@@ -33,8 +33,8 @@ resource "aws_subnet" "public_subnet1a" {
 # Create 2nd public subnet
 resource "aws_subnet" "public_subnet1b" {
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "12.0.2.0/24"
-  availability_zone       = "eu-west-1b"
+  cidr_block              = var.public_subnet1b_cidr
+  availability_zone       = var.availability_zone_1b
   map_public_ip_on_launch = true
   tags = {
     Name = "public_subnet1b"
@@ -43,10 +43,10 @@ resource "aws_subnet" "public_subnet1b" {
 
 # Create 1 Route Table for both Public Subnets
 resource "aws_route_table" "route_table_for_subnets" {
-  vpc_id = "${aws_vpc.main_vpc.id}"
+  vpc_id = aws_vpc.main_vpc.id
 
   tags = {
-    Name = "route-table-1a"
+    Name = "route-table-for-subnets"
   }
 
 }
@@ -119,10 +119,10 @@ resource "aws_instance" "ec2_instance_1a" {
 # Create EC2 instance in subnet 1b
 resource "aws_instance" "ec2_instance_1b" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
-  availability_zone = "eu-west-1b"
+  instance_type = var.instance_type
+  availability_zone = var.availability_zone_1b
   subnet_id         = aws_subnet.public_subnet1b.id
-  key_name          = "MY_EC2_INSTANCE_KEYPAIR"
+  key_name          = var.key_name
 
   tags = {
     Name = "ec2_instance_1b"
@@ -146,7 +146,7 @@ variable "my_ip_address" {
   default = "0.0.0.0/0" # fallback IP
 }
 
-# Create security groups
+# Create security groups for EC2 instances
 
 resource "aws_security_group" "ec2-sg-ssh-http" {
   name        = "public_ec2_sg"
@@ -177,13 +177,37 @@ resource "aws_security_group" "ec2-sg-ssh-http" {
   }
 }
 
+# Create Security Groups for ALB 
+
+resource "aws_security_group" "alb_sg_ssh" {
+  name        = "alb-sg"
+  description = "Allow HTTP from the world"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow from anywhere
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+
 # Create Target Group
 
 resource "aws_lb_target_group" "alb-tg" {
-  name     = "app-tg"
+  name     = "alb-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = var.main_vpc.id
+  vpc_id   = aws_vpc.main_vpc.id
 
   health_check {
     path                = "/"
@@ -203,7 +227,8 @@ resource "aws_lb_target_group_attachment" "alb_tg_attachment_1a" {
 }
 
 resource "aws_lb_target_group_attachment" "alb_tg_attachment_1b" {
-  target_group_arn = aws_lb_target_group.app_tg.arn
+  target_group_arn = aws_lb_target_group.alb-tg.arn
   target_id        = aws_instance.ec2_instance_1b.id
   port             = 80
 }
+
