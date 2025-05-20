@@ -94,50 +94,50 @@ data "aws_ami" "ubuntu" {
 }
 
 # Create EC2 instance in subnet 1a
-resource "aws_instance" "ec2_instance_1a" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
-  availability_zone = "eu-west-1a"
-  subnet_id         = aws_subnet.public_subnet1a.id
-  key_name          = "MY_EC2_INSTANCE_KEYPAIR"
+# resource "aws_instance" "ec2_instance_1a" {
+#   ami           = data.aws_ami.ubuntu.id
+#   instance_type = "t2.micro"
+#   availability_zone = "eu-west-1a"
+#   subnet_id         = aws_subnet.public_subnet1a.id
+#   key_name          = "MY_EC2_INSTANCE_KEYPAIR"
 
-  tags = {
-    Name = "ec2_instance_1a"
-  }
-  vpc_security_group_ids = [aws_security_group.ec2-sg.id]
+#   tags = {
+#     Name = "ec2_instance_1a"
+#   }
+#   vpc_security_group_ids = [aws_security_group.ec2-sg.id]
 
-  user_data = <<-EOF
-  #!/bin/bash
-  yes | sudo apt update 
-  yes | sudo apt install apache2
-  echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
-  sudo systemctl restart apache2
-  EOF 
+#   user_data = <<-EOF
+#   #!/bin/bash
+#   yes | sudo apt update 
+#   yes | sudo apt install apache2
+#   echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
+#   sudo systemctl restart apache2
+#   EOF 
 
-}
+# }
 
 # Create EC2 instance in subnet 1b
-resource "aws_instance" "ec2_instance_1b" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = var.instance_type
-  availability_zone = var.availability_zone_1b
-  subnet_id         = aws_subnet.public_subnet1b.id
-  key_name          = var.key_name
+# resource "aws_instance" "ec2_instance_1b" {
+#   ami           = data.aws_ami.ubuntu.id
+#   instance_type = var.instance_type
+#   availability_zone = var.availability_zone_1b
+#   subnet_id         = aws_subnet.public_subnet1b.id
+#   key_name          = var.key_name
 
-  tags = {
-    Name = "ec2_instance_1b"
-  }
-  vpc_security_group_ids = [aws_security_group.ec2-sg.id]
+#   tags = {
+#     Name = "ec2_instance_1b"
+#   }
+#   vpc_security_group_ids = [aws_security_group.ec2-sg.id]
 
-  user_data = <<-EOF
-  #!/bin/bash
-  yes | sudo apt update 
-  yes | sudo apt install apache2
-  echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
-  sudo systemctl restart apache2
-  EOF 
+#   user_data = <<-EOF
+#   #!/bin/bash
+#   yes | sudo apt update 
+#   yes | sudo apt install apache2
+#   echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
+#   sudo systemctl restart apache2
+#   EOF 
 
-}
+# }
 
 #Create env var for my ip address 
 
@@ -165,7 +165,7 @@ resource "aws_security_group" "ec2-sg" {
     description = "allow http traffic"
     from_port   = 80
     to_port     = 80
-    protocol    = "http"
+    protocol    = "tcp"
     security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
   }
 
@@ -173,7 +173,7 @@ resource "aws_security_group" "ec2-sg" {
     description = "allow https traffic"
     from_port   = 443
     to_port     = 443
-    protocol    = "https"
+    protocol    = "tcp"
     security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
 
   }
@@ -196,21 +196,21 @@ resource "aws_security_group" "alb_sg_http_https_ssh" {
   ingress {
     from_port   = 80
     to_port     = 80
-    protocol    = "http"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Allow http from anywhere
   }
 
    ingress {
     from_port   = 443
     to_port     = 443
-    protocol    = "https"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Allow https from anywhere
   }
 
    ingress {
     from_port   = 22
     to_port     = 22
-    protocol    = "ssh"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Allow ssh from anywhere
   }
 
@@ -243,17 +243,17 @@ resource "aws_lb_target_group" "alb-tg" {
 }
 
 # Register EC2 instances in TG 
-resource "aws_lb_target_group_attachment" "alb_tg_attachment_1a" {
-  target_group_arn = aws_lb_target_group.alb-tg.arn
-  target_id        = aws_instance.ec2_instance_1a.id
-  port             = 80
-}
+# resource "aws_lb_target_group_attachment" "alb_tg_attachment_1a" {
+#   target_group_arn = aws_lb_target_group.alb-tg.arn
+#   target_id        = aws_instance.ec2_instance_1a.id
+#   port             = 80
+# }
 
-resource "aws_lb_target_group_attachment" "alb_tg_attachment_1b" {
-  target_group_arn = aws_lb_target_group.alb-tg.arn
-  target_id        = aws_instance.ec2_instance_1b.id
-  port             = 80
-}
+# resource "aws_lb_target_group_attachment" "alb_tg_attachment_1b" {
+#   target_group_arn = aws_lb_target_group.alb-tg.arn
+#   target_id        = aws_instance.ec2_instance_1b.id
+#   port             = 80
+# }
 
 resource "aws_lb" "app_alb" {
   name               = "app-alb"
@@ -293,13 +293,7 @@ resource "aws_launch_template" "launch_template_for_asg" {
     associate_public_ip_address = true
   }
 
-  user_data = <<-EOF
-  #!/bin/bash
-  yes | sudo apt update 
-  yes | sudo apt install apache2
-  echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
-  sudo systemctl restart apache2
-  EOF 
+  user_data = base64encode(file("user_data.sh"))
 }
 
 # Create Auto-Scaling Group 
