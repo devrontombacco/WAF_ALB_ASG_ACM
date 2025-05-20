@@ -104,7 +104,7 @@ resource "aws_instance" "ec2_instance_1a" {
   tags = {
     Name = "ec2_instance_1a"
   }
-  vpc_security_group_ids = [aws_security_group.ec2-sg-ssh-http.id]
+  vpc_security_group_ids = [aws_security_group.ec2-sg.id]
 
   user_data = <<-EOF
   #!/bin/bash
@@ -127,7 +127,7 @@ resource "aws_instance" "ec2_instance_1b" {
   tags = {
     Name = "ec2_instance_1b"
   }
-  vpc_security_group_ids = [aws_security_group.ec2-sg-ssh-http.id]
+  vpc_security_group_ids = [aws_security_group.ec2-sg.id]
 
   user_data = <<-EOF
   #!/bin/bash
@@ -148,9 +148,9 @@ variable "my_ip_address" {
 
 # Create security groups for EC2 instances
 
-resource "aws_security_group" "ec2-sg-ssh-http" {
-  name        = "public_ec2_sg"
-  description = "Allow inbound traffic on ports 22 and 80"
+resource "aws_security_group" "ec2-sg" {
+  name        = "ec2_sg"
+  description = "Allow inbound traffic on ports 22, 80 & 443"
   vpc_id      = aws_vpc.main_vpc.id
 
   ingress {
@@ -158,15 +158,24 @@ resource "aws_security_group" "ec2-sg-ssh-http" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.my_ip_address]
+    cidr_blocks = [var.my_ip_address] #SSH for main admin only
   }
 
   ingress {
     description = "allow http traffic"
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip_address]
+    protocol    = "http"
+    security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
+  }
+
+  ingress {
+    description = "allow https traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "https"
+    security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
+
   }
 
   egress {
@@ -179,7 +188,7 @@ resource "aws_security_group" "ec2-sg-ssh-http" {
 
 # Create Security Groups for ALB 
 
-resource "aws_security_group" "alb_sg_ssh" {
+resource "aws_security_group" "alb_sg_http_https_ssh" {
   name        = "alb-sg"
   description = "Allow HTTP from the world"
   vpc_id      = aws_vpc.main_vpc.id
@@ -187,8 +196,22 @@ resource "aws_security_group" "alb_sg_ssh" {
   ingress {
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow from anywhere
+    protocol    = "http"
+    cidr_blocks = ["0.0.0.0/0"] # Allow http from anywhere
+  }
+
+   ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "https"
+    cidr_blocks = ["0.0.0.0/0"] # Allow https from anywhere
+  }
+
+   ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "ssh"
+    cidr_blocks = ["0.0.0.0/0"] # Allow ssh from anywhere
   }
 
   egress {
@@ -236,7 +259,7 @@ resource "aws_lb" "app_alb" {
   name               = "app-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg_ssh.id]
+  security_groups    = [aws_security_group.alb_sg_http_https_ssh.id]
   subnets            = [
     aws_subnet.public_subnet1a.id,
     aws_subnet.public_subnet1b.id
@@ -257,3 +280,48 @@ resource "aws_lb_listener" "http_listener" {
     target_group_arn = aws_lb_target_group.alb-tg.arn
   }
 }
+
+# Create Launch Template for Auto-Scaling Group
+resource "aws_launch_template" "launch_template_for_asg" {
+  name_prefix   = "my-template-"
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  key_name      = var.key_name
+
+  network_interfaces {
+    security_groups = [aws_security_group.ec2-sg.id]
+    associate_public_ip_address = true
+  }
+
+  user_data = <<-EOF
+  #!/bin/bash
+  yes | sudo apt update 
+  yes | sudo apt install apache2
+  echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong>$(hostname -I | cut -d" " -f1)</strong></p>"> /var/www/html/index.html
+  sudo systemctl restart apache2
+  EOF 
+}
+
+# Create Auto-Scaling Group 
+resource "aws_autoscaling_group" "asg_for_main_vpc" {
+  desired_capacity     = 2
+  max_size             = 3
+  min_size             = 1
+  vpc_zone_identifier  = [aws_subnet.public_subnet1a.id, aws_subnet.public_subnet1b.id]
+  target_group_arns    = [aws_lb_target_group.alb-tg.arn]
+
+  launch_template {
+    id      = aws_launch_template.launch_template_for_asg.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "ASG-Instance"
+    propagate_at_launch = true
+  }
+}
+
+
+
+
