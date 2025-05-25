@@ -173,7 +173,26 @@ resource "aws_launch_template" "launch_template_for_asg" {
   user_data = base64encode(file("user_data.sh"))
 }
 
+# Create Auto-Scaling Group 
+resource "aws_autoscaling_group" "asg_for_main_vpc" {
+  desired_capacity     = 2
+  max_size             = 3
+  min_size             = 1
+  vpc_zone_identifier  = [aws_subnet.public_subnet1a.id, aws_subnet.public_subnet1b.id]
+  target_group_arns    = [aws_lb_target_group.alb-tg.arn]
 
+  launch_template {
+    id      = aws_launch_template.launch_template_for_asg.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "ASG-Instance"
+    propagate_at_launch = true
+  }
+
+}
 
 
 
@@ -241,29 +260,3 @@ resource "aws_security_group" "ec2-sg" {
   }
 }
 
-
-
-
-
-
-
-# Create Auto-Scaling Group 
-resource "aws_autoscaling_group" "asg_for_main_vpc" {
-  desired_capacity     = 2
-  max_size             = 3
-  min_size             = 1
-  vpc_zone_identifier  = [aws_subnet.public_subnet1a.id, aws_subnet.public_subnet1b.id]
-  target_group_arns    = [aws_lb_target_group.alb-tg.arn]
-
-  launch_template {
-    id      = aws_launch_template.launch_template_for_asg.id
-    version = "$Latest"
-  }
-
-  tag {
-    key                 = "Name"
-    value               = "ASG-Instance"
-    propagate_at_launch = true
-  }
-
-}
