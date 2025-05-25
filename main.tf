@@ -76,6 +76,50 @@ resource "aws_route" "internet_access_route" {
 
 }
 
+
+
+# Create Security Groups for ALB 
+
+resource "aws_security_group" "alb_sg_http_https_ssh" {
+  name        = "alb-sg"
+  description = "Allow HTTP from the world"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow http from anywhere
+  }
+
+   ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow https from anywhere
+  }
+
+   ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow ssh from anywhere
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+
+
+
+
+
 # Dynamically create Ubuntu AMI for EC2
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -140,41 +184,7 @@ resource "aws_security_group" "ec2-sg" {
   }
 }
 
-# Create Security Groups for ALB 
 
-resource "aws_security_group" "alb_sg_http_https_ssh" {
-  name        = "alb-sg"
-  description = "Allow HTTP from the world"
-  vpc_id      = aws_vpc.main_vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow http from anywhere
-  }
-
-   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow https from anywhere
-  }
-
-   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow ssh from anywhere
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
 
 
 
