@@ -77,10 +77,27 @@ resource "aws_route" "internet_access_route" {
 }
 
 
+# Create Target Group
+
+resource "aws_lb_target_group" "alb-tg" {
+  name     = "alb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main_vpc.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+  }
+}
 
 # Create Security Groups for ALB 
 
-resource "aws_security_group" "alb_sg_http_https_ssh" {
+resource "aws_security_group" "alb_sg" {
   name        = "alb-sg"
   description = "Allow HTTP from the world"
   vpc_id      = aws_vpc.main_vpc.id
@@ -114,29 +131,11 @@ resource "aws_security_group" "alb_sg_http_https_ssh" {
   }
 }
 
-# Create Target Group
-
-resource "aws_lb_target_group" "alb-tg" {
-  name     = "alb-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main_vpc.id
-
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-  }
-}
-
 resource "aws_lb" "app_alb" {
   name               = "app-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg_http_https_ssh.id]
+  security_groups    = [aws_security_group.alb_sg.id]
   subnets            = [
     aws_subnet.public_subnet1a.id,
     aws_subnet.public_subnet1b.id
@@ -146,6 +145,8 @@ resource "aws_lb" "app_alb" {
     Name = "app-alb"
   }
 }
+
+# Create ALB listener
 
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.app_alb.arn
@@ -173,7 +174,7 @@ resource "aws_launch_template" "launch_template_for_asg" {
   user_data = base64encode(file("user_data.sh"))
 }
 
-# Create Auto-Scaling Group 
+# # Create Auto-Scaling Group 
 resource "aws_autoscaling_group" "asg_for_main_vpc" {
   desired_capacity     = 2
   max_size             = 3
@@ -193,7 +194,6 @@ resource "aws_autoscaling_group" "asg_for_main_vpc" {
   }
 
 }
-
 
 
 # Dynamically create Ubuntu AMI for EC2
@@ -240,7 +240,7 @@ resource "aws_security_group" "ec2-sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
+    security_groups = [aws_security_group.alb_sg.id] #Only allow access from ALB
   }
 
   ingress {
@@ -248,7 +248,7 @@ resource "aws_security_group" "ec2-sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    security_groups = [aws_security_group.alb_sg_http_https_ssh.id] #Only allow access from ALB
+    security_groups = [aws_security_group.alb_sg.id] #Only allow access from ALB
 
   }
 
