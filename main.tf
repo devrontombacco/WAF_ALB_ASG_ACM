@@ -171,7 +171,8 @@ resource "aws_launch_template" "launch_template_for_asg" {
     associate_public_ip_address = true
   }
 
-  user_data = base64encode(file("user_data.sh"))
+  # user_data = base64encode(file("user_data.sh"))
+  user_data = base64encode(templatefile("user_data.sh", {}))
 }
 
 # # Create Auto-Scaling Group 
