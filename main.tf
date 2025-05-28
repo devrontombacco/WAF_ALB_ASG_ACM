@@ -261,3 +261,61 @@ resource "aws_security_group" "ec2-sg" {
   }
 }
 
+# Create IPSET
+
+resource "aws_wafv2_ip_set" "my_ipSet" {
+  name               = "my_ipSet"
+  scope              = "REGIONAL" # For ALBs
+  ip_address_version = "IPV4"
+
+  addresses          = [var.my_ip]
+  
+  tags = {
+    Environment = "Prod"
+  }
+}
+
+# Rule for WAF
+resource "aws_wafv2_web_acl" "web-acl" {
+  name        = "app-WAF"
+  scope       = "REGIONAL"
+  description = "WAF with IPSet rule"
+  
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "allow-my-ip"
+    priority = 1
+
+    action {
+      allow {}
+    }
+
+    statement {
+      ip_set_reference_statement {
+        arn = aws_wafv2_ip_set.my_ipSet.arn
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "allow-my-ip"
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    sampled_requests_enabled   = true
+    metric_name                = "app-waf"
+  }
+}
+
+# WAF-ALB association 
+
+resource "aws_wafv2_web_acl_association" "waf-alb-association" {
+  resource_arn = aws_lb.app_alb.arn
+  web_acl_arn  = aws_wafv2_web_acl.web-acl.arn
+}

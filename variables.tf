@@ -39,3 +39,7 @@ variable "alb_target_group_name" {
   type        = string
 }
 
+variable "my_ip" {
+  description = "My IP"
+  type        = string
+}
