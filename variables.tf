@@ -43,3 +43,9 @@ variable "my_ip" {
   description = "My IP"
   type        = string
 }
+
+#Create env var for my ip address 
+variable "my_ip_address" {
+  type    = string
+  default = "0.0.0.0/0" # fallback IP
+}
