@@ -18,7 +18,7 @@ resource "aws_lb_target_group" "alb-tg" {
 }
 
 
-
+#Create ALB
 resource "aws_lb" "app_alb" {
   name               = "app-alb"
   internal           = false
