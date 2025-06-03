@@ -39,13 +39,14 @@ To install this code on your machine follow these steps:
 - `terraform init`
 - `terraform plan`
 - `terraform apply` (select yes) 
-5) When prompted for your ip address, provide it in the terminal
+5) When prompted for your ip address, provide it in the terminal and remember to put a **/32** at the end.
 
 ### Usage
 Follow these steps to check its working: 
-1) Either in the AWS console or through the output in your terminal, locate the ALB's Domain Name and see if you can connect to it using **http**. You should see a html message appear on your screen with the hostname ip and server ip.
+1) Either in the AWS console or through the output in your terminal, locate the ALB's DNS Name and see if you can connect to it using **http**. You should see a html message appear on your screen with the hostname ip and server ip.
 2) If you want to SSH into one of your EC2 hosts you can now do so using the keypair you created.
 3) To check if the Firewall is working, you can change the action in the `Rule for WAF` section (in file loadbalancer.tf) from "allow" to "block". If you're unable to connect it means its working correctly as its blocking your IP. Alternatively, without touching the code, you can turn on a VPN and try to connect to the ALB's DNS. You should be blocked automatically, showing the setup works. 
+4) Once everything is working I highly recommend you run `terraform destroy` in order not to incurr fees. 
 
 
 ### Licensing 
